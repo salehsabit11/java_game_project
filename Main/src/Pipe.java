@@ -14,14 +14,7 @@ public class Pipe {
     private boolean passed;
     private final boolean scoringPipe;
 
-    public Pipe(
-            int x,
-            int y,
-            int width,
-            int height,
-            Image image,
-            boolean scoringPipe) {
-
+    public Pipe(int x,int y,int width,int height,Image image,boolean scoringPipe) {
         this.x = x;
         this.y = y;
         this.width = width;
