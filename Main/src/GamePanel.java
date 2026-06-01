@@ -1,213 +1,264 @@
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-
 import javax.swing.*;
-import javax.swing.Timer;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.List;
 
-import java.util.*;
+public class GamePanel extends JPanel
+        implements KeyListener, ActionListener {
 
-public class GamePanel extends JFrame implements KeyListener,ActionListener {
     private final int boardWidth;
     private final int boardHeight;
-    private final Image bgImage;
+
     private final Bird bird;
-    private final int gravity;
     private final PipeManager pipeManager;
     private final ScoreManager scoreManager;
+
+    private final int gravity;
+
     private final Timer gameLoopTimer;
     private final Timer pipeSpawnTimer;
+
     private GameState gameState;
     private Difficulty difficulty;
-    private Image[] digit= new Image[10];
+
+    private Image bgImage;
     private Image gameOverImg;
 
+    private final Image[] digits = new Image[10];
 
-    public GamePanel(int boardWidth, int boardHeight){
-        this.boardHeight=boardHeight;
-        this.boardWidth=boardWidth;
-        this.gravity=2; // this pulls back to the land
-        addKeyListener(this);
+    public GamePanel(int boardWidth, int boardHeight) {
+
+        this.boardWidth = boardWidth;
+        this.boardHeight = boardHeight;
+
+        setPreferredSize(new Dimension(boardWidth, boardHeight));
+
         setFocusable(true);
-        setPreferredSize(new Dimension(boardWidth,boardHeight));
+        addKeyListener(this);
 
-        this.bgImage= loadImage("/main/asset/flappybirdbg.png");
-        Image topPipeImage= loadImage("/main/asset/toppipe.png");
-        Image bottomPipeImage= loadImage("/main/asset/bottompipe.png");
-        Image birdImage= loadImage("/main/asset/bird.png");
+        gravity = 1;
 
-        //bird
-        int birdX= boardWidth/8;
-        int birdY= boardHeight/2;
-        this.bird= new Bird(birdX, birdY, 34, 24, birdImage);
+        // Images
+        bgImage = loadImage("/asset/flappybirdbg.png");
+        Image topPipeImage =loadImage("/asset/toppipe.png");
+        Image bottomPipeImage =loadImage("/asset/bottompipe.png");
+        Image birdImage = loadImage("/asset/bird.png");
+        gameOverImg =loadImage("/asset/gameover.png");
 
-        this.scoreManager= new ScoreManager();
-        this.pipeManager= new PipeManager(boardWidth, 64, 512, topPipeImage, bottomPipeImage);
+        for (int i = 0; i < 10; i++) {
+            digits[i] = loadImage("/asset/" + i + ".png");
+        }
 
-        this.gameState= GameState.READY;
-        this.difficulty= Difficulty.NORMAL;
+        // Bird
+        bird = new Bird(boardWidth / 8,boardHeight / 2,34,24,birdImage);
 
-        this.pipeSpawnTimer= new Timer(1500, event -> pipeManager.createPipePair());
-        this.gameLoopTimer= new Timer(1000/60, this);
+        // Managers
+        scoreManager = new ScoreManager();
+        pipeManager = new PipeManager(boardWidth,64,512,topPipeImage,bottomPipeImage);
+
+        difficulty = Difficulty.NORMAL;
+        gameState = GameState.READY;
+
+        pipeSpawnTimer =new Timer(2000,e -> pipeManager.createPipePair());
+        gameLoopTimer =new Timer(1500 / 60,this);
 
         SwingUtilities.invokeLater(this::setDifficultyAndStart);
-        
-        // score
-        for(int i=0; i<=9; i++){
-            digit[i]= loadImage("/main/asset/"+ i+ ".png");
+    }
+
+    private Image loadImage(String path) {
+
+        java.net.URL url = getClass().getResource(path);
+        if (url == null) {
+            System.out.println("Image not found: " + path);
+            return null;
         }
-        gameOverImg= loadImage("/main/asset/gameover.png");
+
+        return new ImageIcon(url).getImage();
     }
 
-    //load the image
-    private Image loadImage(String filename) {
-        return new ImageIcon(getClass().getResource(filename)).getImage();
-    }
+    private void setDifficultyAndStart() {
 
-    private void setDifficultyAndStart(){
-        Difficulty selectDifficulty= JOptionPane.showInputDialog(this, "Select Game Difficulty", "Difficulty", JOptionPane.QUESTION_MESSAGE, null, Difficulty.values(), Difficulty.NORMAL);
-        if(selectDifficulty == null){
+        Difficulty selectedDifficulty = (Difficulty)JOptionPane.showInputDialog(this,"Select Difficulty","Difficulty",JOptionPane.QUESTION_MESSAGE,null,Difficulty.values(),Difficulty.NORMAL);
+
+        if (selectedDifficulty == null) {
             System.exit(0);
         }
-        difficulty= selectDifficulty;
+
+        difficulty = selectedDifficulty;
         pipeManager.setDifficulty(difficulty);
         scoreManager.setDifficulty(difficulty);
+
         startGame();
     }
 
     private void startGame() {
-        // TODO Auto-generated method stub
+
         bird.reset();
         pipeManager.reset();
         scoreManager.resetScore();
-        gameState= GameState.RUNNING;
+        pipeManager.createPipePair();
+        gameState = GameState.RUNNING;
+
         pipeSpawnTimer.start();
         gameLoopTimer.start();
+
         requestFocusInWindow();
     }
-    protected void paintComponent(Graphics g){
-        super.paintComponents(g);
+
+    @Override
+    protected void paintComponent(Graphics g) {
+
+        super.paintComponent(g);
         draw(g);
     }
-    //place all graphical components.
-    private void draw(Graphics g){
-        g.drawImage(bgImage, 0, 0, boardWidth ,boardHeight, null);
+
+    private void draw(Graphics g) {
+        if (bgImage != null) {
+            g.drawImage(bgImage,0,0,boardWidth,boardHeight,null);
+        }
+
         bird.draw(g);
         pipeManager.draw(g);
         drawScore(g);
     }
 
-    //scoring
-    private void drawScore(Graphics g){
-        String score= String.valueOf(scoreManager.getScore());
+    private void drawScore(Graphics g) {
 
-        int dgtWidth= 24;
-        int dgtHeight= 36;
-        int dgtGap= 4;
+        String score = String.valueOf(scoreManager.getScore());
 
-        int scrX= (getWidth()- score.length()*(dgtWidth+dgtGap))/2; 
-        int scrY=50;
+        int digitWidth = 24;
+        int digitHeight = 36;
+        int gap = 4;
 
-        for(int i=0; i<score.length(); i++){
-            int num= Character.getNumericValue(score.charAt(i));
-            int x= scrX+ i*(dgtWidth+dgtGap);
+        int startX = (getWidth()- score.length()* (digitWidth + gap))/ 2;
+        int y = 50;
 
-            g.drawImage(digit[num],x,scrY, dgtWidth, dgtHeight,null);
-        }
-        //game over image print
-        if(gameState==gameState.GAME_OVER){
-            int imgWidth= 200;
-            int imgHeight= 60;
-            int imgX= (getWidth()-imgWidth)/2;
-            int imgY= (getHeight()-imgHeight)/2;
-
-            g.drawImage(gameOverImg, imgX, imgY, imgWidth, imgHeight, null);
+        for (int i = 0; i < score.length(); i++) {
+            int num =Character.getNumericValue(score.charAt(i));
+            g.drawImage(digits[num],startX + i * (digitWidth + gap),y,digitWidth,digitHeight,null);
         }
 
-        //hence no asset found for highest score & Mode
-        g.setColor(Color.white);
-        g.setFont(new Font("Arial", Font.PLAIN, 26));
-        g.drawString("High: "+scoreManager.getHighScore(), 10, 65);
-        g.drawString("Mode: "+difficulty.getDisplayName(), 10, 95);
+        if (gameState == GameState.GAME_OVER
+                && gameOverImg != null) {
+
+            g.drawImage(gameOverImg,(getWidth() - 200) / 2,(getHeight() - 60) / 2,200,60,null);
+        }
+
+        // g.setColor(Color.WHITE);
+
+        // g.setFont(
+        //         new Font(
+        //                 "Arial",
+        //                 Font.PLAIN,
+        //                 24
+        //         )
+        // );
+
+        // g.drawString(
+        //         "High: "
+        //                 + scoreManager.getHighScore(),
+        //         10,
+        //         65
+        // );
+
+        // g.drawString(
+        //         "Mode: "
+        //                 + difficulty.getDisplayName(),
+        //         10,
+        //         95
+        // );
     }
 
-    private void updateGame(){
+    private void updateGame() {
+
         bird.update(gravity);
         pipeManager.update();
         checkScore();
-        checkCollisions();
+        checkCollision();
     }
 
-    private void checkCollisions() {
-        for(Pipe pipe: pipeManager.getPipes()){
-            boolean passed = !pipe.isPassed() && bird.getX()>pipe.getX() +pipe.getWidth();
-            if(passed){
+    private void checkScore() {
+
+        List<Pipe> pipes = pipeManager.getPipes();
+
+        for (Pipe pipe : pipes) {
+            boolean passed =!pipe.isPassed() && bird.getX()> pipe.getX()+ pipe.getWidth();
+            if (passed) {
                 pipe.setPassed(true);
-                if(pipe.isScoringPipe()){
+
+                if (pipe.isScoringPipe()) {
                     scoreManager.registerPassedPipePair();
                 }
             }
         }
     }
 
-    private void checkScore() {
-        for(Pipe pipe: pipeManager.getPipes()){
-            if(bird.getBounds().intersects(pipe.getBounds())){
-                theEnd();
+    private void checkCollision() {
+
+        for (Pipe pipe :pipeManager.getPipes()) {
+            if (bird.getBounds().intersects(pipe.getBounds())) {
+                gameOver();
                 return;
             }
-            if(bird.getY()+bird.getHeight()>boardHeight){
-                theEnd();
-            }
+        }
+
+        if (bird.getY()+ bird.getHeight()> boardHeight) {
+            gameOver();
         }
     }
 
-    private void theEnd() {
-        // TODO Auto-generated method stub
-        if(gameState==gameState.GAME_OVER){
+    private void gameOver() {
+
+        if (gameState == GameState.GAME_OVER) {
             return;
         }
-        gameState= gameState.GAME_OVER;
+
+        gameState = GameState.GAME_OVER;
+
         pipeSpawnTimer.stop();
         gameLoopTimer.stop();
+
         scoreManager.saveHighScoreIfNeeded();
+
         repaint();
+
         SwingUtilities.invokeLater(this::showGameOverDialog);
     }
 
-    private void showGameOverDialog(){
-        String message= "Game over !!!\nDifficulty:"+difficulty.getDisplayName()+"\nScore:"+scoreManager.getScore()+"\nHigh Score:" +scoreManager.getHighScore()+"\n Play Again ??";
-        int choice= JOptionPane.showConfirmDialog(this, message, "Round Finished", JOptionPane.YES_NO_OPTION);
-        if(choice == JOptionPane.YES_OPTION){
+    private void showGameOverDialog() {
+
+        String message ="Game Over!\n"+ "Difficulty: "+ difficulty.getDisplayName()+ "\nScore: "+ scoreManager.getScore()+ "\nHigh Score: "+ scoreManager.getHighScore()+ "\n\nPlay Again?";
+
+        int choice = JOptionPane.showConfirmDialog(this,message,"Round Finished",JOptionPane.YES_NO_OPTION);
+
+        if (choice == JOptionPane.YES_OPTION) {
             setDifficultyAndStart();
         }
-        else System.exit(0);
+        else {
+            System.exit(0);
+        }
     }
 
-    //handle timer event
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(gameState== GameState.RUNNING){
+        if (gameState == GameState.RUNNING) {
             updateGame();
             repaint();
         }
     }
-    //handle key press
+
     @Override
-    public void keyTyped(KeyEvent e) {
-        if(e.getKeyCode() == KeyEvent.VK_SPACE){// use SPACE-BAR for control
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode()== KeyEvent.VK_SPACE){
             bird.jump();
         }
     }
 
     @Override
-    public void keyPressed(KeyEvent e) {//we dont need that till now
+    public void keyReleased(KeyEvent e) {
     }
 
     @Override
-    public void keyReleased(KeyEvent e) {
-        //we dont need that till now;
+    public void keyTyped(KeyEvent e) {
     }
 }
