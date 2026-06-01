@@ -2,38 +2,43 @@ import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Rectangle;
 
-public class Pipe {
+public class Bird {
 
-    private final Image image;
+    private final int startX;
+    private final int startY;
     private final int width;
     private final int height;
+    private final Image image;
 
     private int x;
     private int y;
+    private int velocityY;
 
-    private boolean passed;
-    private final boolean scoringPipe;
-
-    public Pipe(
-            int x,
-            int y,
-            int width,
-            int height,
-            Image image,
-            boolean scoringPipe) {
-
-        this.x = x;
-        this.y = y;
+    public Bird(int startX, int startY, int width, int height, Image image) {
+        this.startX = startX;
+        this.startY = startY;
         this.width = width;
         this.height = height;
         this.image = image;
 
-        this.passed = false;
-        this.scoringPipe = scoringPipe;
+        reset();
     }
 
-    public void update(int velocityX) {
-        x += velocityX;
+    public void reset() {
+        x = startX;
+        y = startY;
+        velocityY = 0;
+    }
+
+    public void jump() {
+        velocityY = -9;
+    }
+
+    public void update(int gravity) {
+        velocityY += gravity;
+        y += velocityY;
+
+        y = Math.max(y, 0);
     }
 
     public void draw(Graphics g) {
@@ -58,17 +63,5 @@ public class Pipe {
 
     public int getHeight() {
         return height;
-    }
-
-    public boolean isPassed() {
-        return passed;
-    }
-
-    public void setPassed(boolean passed) {
-        this.passed = passed;
-    }
-
-    public boolean isScoringPipe() {
-        return scoringPipe;
     }
 }
