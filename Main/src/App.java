@@ -7,7 +7,7 @@ public class App {
         final int boardWidth = 360;
         final int boardHeight = 640;
 
-        JFrame frame = new JFrame("Flappy Elephant");
+        JFrame frame = new JFrame("Flappy Bird");
 
         GamePanel gamePanel = new GamePanel(boardWidth, boardHeight);
 

@@ -94,7 +94,9 @@ public class GamePanel extends JPanel
     private void startGame() {
 
         bird.reset();
+
         pipeManager.reset();
+
         scoreManager.resetScore();
         pipeManager.createPipePair();
         gameState = GameState.RUNNING;
@@ -118,7 +120,9 @@ public class GamePanel extends JPanel
         }
 
         bird.draw(g);
+
         pipeManager.draw(g);
+
         drawScore(g);
     }
 
@@ -172,7 +176,9 @@ public class GamePanel extends JPanel
     private void updateGame() {
 
         bird.update(gravity);
+
         pipeManager.update();
+
         checkScore();
         checkCollision();
     }
@@ -233,6 +239,10 @@ public class GamePanel extends JPanel
 
         if (choice == JOptionPane.YES_OPTION) {
             setDifficultyAndStart();
+
+        } else {
+
+            System.exit(0);
         }
         else {
             System.exit(0);
@@ -243,6 +253,7 @@ public class GamePanel extends JPanel
     public void actionPerformed(ActionEvent e) {
         if (gameState == GameState.RUNNING) {
             updateGame();
+
             repaint();
         }
     }
